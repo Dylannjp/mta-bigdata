@@ -1,0 +1,25 @@
+[
+  {
+    "informedEntity": [
+      {
+        "trip": {
+          "tripId": "126900_2..S01R",
+          "routeId": "2"
+        }
+      },
+      {
+        "trip": {
+          "tripId": "026800_7..N",
+          "routeId": "7"
+        }
+      }
+    ],
+    "headerText": {
+      "translation": [
+        {
+          "text": "Train delayed"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,15 @@
+gtfs_subway/
+mta-bigdata/
+mypackage/
+
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.lock.hcl
+
+dashboard.zip
+fetcher.zip
+prediction.zip
+rules_engine.zip
+
+get_snapshot.py

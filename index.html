@@ -1,0 +1,90 @@
+<!-- AI generated page just to showcase the API call for the prediction. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTA Travel Time Predictor</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
+        h2 { text-align: center; color: #333; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        select, button { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; }
+        button { background-color: #0039A6; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        button:hover { background-color: #00267a; }
+        #result { margin-top: 20px; font-size: 1.2rem; text-align: center; font-weight: bold; color: #0039A6; min-height: 1.5em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🚇 MTA AI Predictor</h2>
+    
+    <label>Start Station</label>
+    <select id="start_station">
+        <option value="635N">Parkchester (635N)</option>
+        <option value="633N">St Lawrence Av (633N)</option>
+        <option value="631N">Whitlock Av (631N)</option>
+        <option value="629N">Hunts Point Av (629N)</option>
+    </select>
+
+    <label>End Station</label>
+    <select id="end_station">
+        <option value="631N">Whitlock Av (631N)</option>
+        <option value="629N">Hunts Point Av (629N)</option>
+        <option value="635N">Parkchester (635N)</option>
+    </select>
+
+    <label>Train Route</label>
+    <select id="route_id">
+        <option value="6">6 Line</option>
+    </select>
+
+    <button onclick="getPrediction()">Predict Travel Time</button>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    async function getPrediction() {
+        const url = "https://mg7rmmfjs6.execute-api.us-east-2.amazonaws.com/predict-travel-time";
+        
+        const payload = {
+            start_station: document.getElementById('start_station').value,
+            end_station: document.getElementById('end_station').value,
+            route_id: document.getElementById('route_id').value
+        };
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.color = "#333";
+        resultDiv.innerText = "Thinking...";
+
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("API Error");
+
+            const data = await response.json();
+            const totalSeconds = data.predicted_travel_time_seconds;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.round(totalSeconds % 60);
+
+            resultDiv.style.color = "#0039A6";
+            resultDiv.innerText = `⏱ Estimated Time: ${minutes}m ${seconds}s`;
+
+        } catch (error) {
+            console.error(error);
+            resultDiv.style.color = "red";
+            resultDiv.innerText = "Error fetching prediction.";
+        }
+    }
+</script>
+
+</body>
+</html>
