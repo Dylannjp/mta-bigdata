@@ -48,7 +48,7 @@ resource "aws_dynamodb_table" "pipeline_vehicles" {
 
 # Make a dynamoDB table for the static schedule data
 
-# dynamoDB table mapping stop_id to stop_name
+# DynamoDB table mapping stop_id to stop_name
 resource "aws_dynamodb_table" "static_stops" {
   name           = "mta-static-stops-table"
   billing_mode   = "PAY_PER_REQUEST"
@@ -60,7 +60,7 @@ resource "aws_dynamodb_table" "static_stops" {
   }
 }
 
-# dynamoDB table to store scheduled times
+# DynamoDB table to store scheduled times
 resource "aws_dynamodb_table" "static_stop_times" {
   name           = "mta-static-stop-times-table"
   billing_mode   = "PAY_PER_REQUEST"
@@ -262,11 +262,7 @@ resource "aws_lambda_event_source_mapping" "kinesis_trigger" {
   batch_size        = 100 # How many records to process at once
 }
 
-# ---------------------------------------------------------=
-
-# --- 8. API SERVING LAYER ---
-
-# First, define the IAM Role and Policy for our new Dashboard Lambda
+# Define the IAM Role and Policy for our new Dashboard Lambda
 resource "aws_iam_role" "dashboard_lambda_role" {
   name = "mta-dashboard-lambda-role"
   assume_role_policy = jsonencode({
@@ -306,25 +302,23 @@ resource "aws_iam_role_policy" "dashboard_lambda_policy" {
   })
 }
 
-# Second, define the new Lambda function itself
+# Define the new Lambda function itself
 resource "aws_lambda_function" "dashboard_lambda" {
   function_name    = "mta-dashboard-function"
   role             = aws_iam_role.dashboard_lambda_role.arn
   handler          = "lambda_function.lambda_handler"
   runtime          = "python3.10" # Match your other functions
   
-  # We will create this zip file next
   filename         = "../dashboard.zip"
   source_code_hash = filebase64sha256("../dashboard.zip")
   
   timeout          = 20
   memory_size      = 256
 
-  # Layers are great if you use Pandas in this Lambda, otherwise optional
-  # layers = [ "arn:aws:lambda:us-east-2:245902329972:layer:testingLayer:4" ]
+  layers = [ "arn:aws:lambda:us-east-2:245902329972:layer:testingLayer:4" ]
 }
 
-# Third, define the API Gateway and connect it to the Lambda
+# Define the API Gateway and connect it to the Lambda
 resource "aws_apigatewayv2_api" "mta_api" {
   name          = "mta-live-api"
   protocol_type = "HTTP"
@@ -342,7 +336,7 @@ resource "aws_apigatewayv2_route" "live_delays_route" {
   target    = "integrations/${aws_apigatewayv2_integration.dashboard_integration.id}"
 }
 
-# This grants API Gateway permission to invoke your Lambda function
+# API Gateway permission to invoke your Lambda function
 resource "aws_lambda_permission" "api_gateway_permission" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
@@ -353,18 +347,12 @@ resource "aws_lambda_permission" "api_gateway_permission" {
   source_arn = "${aws_apigatewayv2_api.mta_api.execution_arn}/*/*"
 }
 
-# Finally, create a "Stage" to make the API publicly accessible
+# Create API Gateway Stage
 resource "aws_apigatewayv2_stage" "default_stage" {
   api_id      = aws_apigatewayv2_api.mta_api.id
   name        = "$default"
   auto_deploy = true
 }
-
-# ------------------------------------------------------------------------
-
-# In terraform/main.tf, inside section "8. API SERVING LAYER"
-
-# --- Prediction API Components ---
 
 # IAM Role and Policy for the Prediction Lambda
 resource "aws_iam_role" "prediction_lambda_role" {
@@ -385,13 +373,11 @@ resource "aws_iam_role_policy" "prediction_lambda_policy" {
   policy = jsonencode({
     Version   = "2012-10-17",
     Statement = [
-      # Standard permissions for logging
       {
         Effect   = "Allow",
         Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
         Resource = "arn:aws:logs:us-east-2:245902329972:log-group:/aws/lambda/mta-prediction-function:*"
       },
-      # CRITICAL: Permission to call your SageMaker Endpoint
       {
         Effect   = "Allow",
         Action   = "sagemaker:InvokeEndpoint",
@@ -402,7 +388,7 @@ resource "aws_iam_role_policy" "prediction_lambda_policy" {
   })
 }
 
-# The Prediction Lambda function itself
+# Make a prediction lambda function itself
 resource "aws_lambda_function" "prediction_lambda" {
   function_name    = "mta-prediction-function"
   role             = aws_iam_role.prediction_lambda_role.arn
@@ -423,7 +409,7 @@ resource "aws_lambda_function" "prediction_lambda" {
   }
 }
 
-# The new API Gateway Route for predictions
+# Make API Gateway Route for predictions
 resource "aws_apigatewayv2_route" "prediction_route" {
   api_id    = aws_apigatewayv2_api.mta_api.id
   route_key = "POST /predict-travel-time" # Using POST for requests with a body
@@ -437,7 +423,7 @@ resource "aws_apigatewayv2_integration" "prediction_integration" {
   integration_uri  = aws_lambda_function.prediction_lambda.invoke_arn
 }
 
-# Permission for API Gateway to invoke this specific Lambda
+# API Gateway permission to invoke the lambda function
 resource "aws_lambda_permission" "api_gateway_prediction_permission" {
   statement_id  = "AllowAPIGatewayInvokePrediction"
   action        = "lambda:InvokeFunction"
